@@ -1,4 +1,4 @@
-# Semgrep Github PR commenter Action
+# Semgrep Github PR commenter Action (WIP)
 
 This action will comment on a Github PR with the results of a Semgrep scan.
 
