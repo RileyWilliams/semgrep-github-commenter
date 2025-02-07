@@ -1,0 +1,16 @@
+name: "Semgrep to GitHub Comment"
+description: "Converts Semgrep JSON reports to GitHub PR comments"
+
+inputs:
+  report-path:
+    description: "Path to the Semgrep JSON report file"
+    required: true
+    default: "report.json"
+
+  github-token:
+    description: "GitHub token for creating comments"
+    required: true
+
+runs:
+  using: "node20"
+  main: "dist/index.js"
