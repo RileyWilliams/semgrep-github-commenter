@@ -48,10 +48,36 @@ function createMarkdown(
   return markdown;
 }
 
+function severityPriority(sev: string): number {
+  switch (sev.toUpperCase()) {
+    case "CRITICAL":
+      return 5;
+    case "HIGH":
+      return 4;
+    case "MEDIUM":
+      return 3;
+    case "LOW":
+      return 2;
+    case "INFO":
+    default:
+      return 1;
+  }
+}
+
+function filterFindingsBySeverity(
+  findings: SemgrepFinding[],
+  threshold: string
+): SemgrepFinding[] {
+  return findings.filter(
+    (f) => severityPriority(f.extra.severity) >= severityPriority(threshold)
+  );
+}
+
 async function run(): Promise<void> {
   try {
     const reportPath = core.getInput("report-path");
     const githubToken = core.getInput("github-token");
+    const severityThreshold = core.getInput("severity-threshold") || "INFO";
 
     // Added checks for missing inputs
     if (!reportPath) {
@@ -73,12 +99,19 @@ async function run(): Promise<void> {
     // Semgrep sometimes uses `results` or `errors`. We'll pull whichever is populated.
     const findings = parsed.results || parsed.errors || [];
 
+    // Filter out findings below our threshold
+    const filteredFindings = filterFindingsBySeverity(
+      findings,
+      severityThreshold
+    );
+
     const context = github.context;
     const { owner, repo } = context.repo;
     // Use PR head or a default/fallback
     const ref = context.payload.pull_request?.head?.ref ?? "main"; // TODO: Make this configurable
 
-    const markdown = createMarkdown(findings, owner, repo, ref);
+    // Generate the markdown only for filtered findings
+    const markdown = createMarkdown(filteredFindings, owner, repo, ref);
 
     // Post comment on PR if available
     if (context.payload.pull_request) {
@@ -93,6 +126,13 @@ async function run(): Promise<void> {
     } else {
       core.warning(
         "No pull request context - this action only comments if triggered on a PR."
+      );
+    }
+
+    // Optionally fail the action if we found any issues at or above the threshold
+    if (filteredFindings.length > 0) {
+      core.setFailed(
+        `Found ${filteredFindings.length} ${severityThreshold}+ severity issue(s).`
       );
     }
   } catch (error) {
