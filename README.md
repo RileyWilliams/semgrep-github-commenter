@@ -22,7 +22,7 @@ This action will comment on a Github PR with the results of a Semgrep scan.
          - name: Run Semgrep scan
            run: semgrep scan --config auto --json > report.json
 
-         - name: Report issues via semgrep2github-action
+         - name: Upload Semgrep findings as comments
            uses: rileywilliams/semgrep-github-commenter-action@v1.0.0 
            with:
              report-path: report.json
